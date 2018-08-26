@@ -5,6 +5,7 @@ use strict;
 use warnings;
 use Time::HiRes;
 use POSIX;
+use Data::Dumper;
 
 my $tiempoInicial = [Time::HiRes::gettimeofday()]; # Inicializamos el contador de tiempo
 
@@ -22,34 +23,9 @@ exit(0);
 
 sub formatearTiempo {
   my $tiempoTotal = shift;
-  my $tiempoLegible = $tiempoTotal;
-  my @unidadesDeMedida = (1,60,60,24);
-  my @unidadesDeMedidaSigla = ('seg','min','hora','día');
-  my $indice = 0;
-
-  my ($segundoTotal, $microsegundos) = split(/\./, $tiempoTotal);
-  if($segundoTotal > 0){
-    foreach my $unidad (@unidadesDeMedida) {
-      if($segundoTotal >= $unidad){
-        $segundoTotal = floor($segundoTotal / $unidad);
-print "Ind: ".$indice." - ".$segundoTotal."\n";
-        if($indice == 0){
-          $tiempoLegible = $segundoTotal.".".$microsegundos." ".$unidadesDeMedidaSigla[$indice].".";
-        }else{
-          $tiempoLegible = $segundoTotal." ".$unidadesDeMedidaSigla[$indice].", ".$tiempoLegible;
-        }
-      }else{
-        $segundoTotal = 0;
-      }
-      $indice++;
-    }
-  }else{
-    $tiempoLegible = "0.".$microsegundos." ".$unidadesDeMedidaSigla[$indice].".";
-  }
-  
-  $tiempoLegible = $tiempoLegible." (".$tiempoTotal.")";
-
-  return $tiempoLegible;
+  my ($tiempoEnSegundos, $microsegundos) = split(/\./,$tiempoTotal);
+  return sprintf "%d días, %d horas, %d minutos y %d.%s segundos (%s)",(gmtime $tiempoEnSegundos)[7,2,1,0],$microsegundos, $tiempoTotal;
+  #return sprintf "%d días, %d horas, %d minutos y %f segundos\n",(gmtime $tiempoEnSegundos)[7,2,1,0];
 }
 
 
