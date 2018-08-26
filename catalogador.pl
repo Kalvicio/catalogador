@@ -1,0 +1,45 @@
+#!perl
+END { print "Tiempo de Ejecución: ", time() - $^T, " segundos\n" }
+$|=1;
+use strict;
+use warnings;
+use Time::HiRes;
+use POSIX;
+
+my $tiempoInicial = [Time::HiRes::gettimeofday()]; # Inicializamos el contador de tiempo
+
+sleep (int(rand(120)));
+
+
+my ($user, $system, $child_user, $child_system) = times;
+print "Tiempo: ".&formatearTiempo(Time::HiRes::tv_interval($tiempoInicial))."\n";
+    #"user time for $$ was $user\n",
+    #"system time for $$ was $system\n",
+    #"user time for all children was $child_user\n",
+    #"system time for all children was $child_system\n";
+
+exit(0);
+
+sub formatearTiempo {
+  my $tiempoTotal = shift;
+  my $tiempoLegible = $tiempoTotal;
+  my @unidadesDeMedida = (60,60,24);
+  my @unidadesDeMedidaSigla = ('min','hora','día');
+  my $indice = 0;
+
+  $tiempoLegible = $tiempoTotal." seg.";
+  if($tiempoTotal >= 60){
+    foreach my $unidad (@unidadesDeMedida) {
+      my $segundo = $tiempoTotal % $unidad;
+      if($tiempoTotal >= $unidad){
+        my $tiempoTmp = floor ($tiempoTotal / $unidad);
+        $tiempoLegible = $tiempoTmp." ".$unidadesDeMedidaSigla[$indice].", ".$tiempoLegible;
+      }
+      $indice++;
+    }
+  }
+  return $tiempoLegible;
+}
+
+
+1;
