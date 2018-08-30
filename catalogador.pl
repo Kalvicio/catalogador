@@ -54,11 +54,14 @@ sleep (int(rand(120)));
 
 my $t1 = Benchmark->new;
 my ($user, $system, $child_user, $child_system) = times;
-say "Tiempo de Ejecución: ".&formatearTiempo(Time::HiRes::tv_interval($tiempoInicial))."\n",
-    "user time for $$ was $user\n",
-    "system time for $$ was $system\n",
-    "user time for all children was $child_user\n",
-    "system time for all children was $child_system" if $debug >= 100;
+say "++++++++++++++\n",
+    "+ FINALIZADO +\n",
+    "++++++++++++++";
+say "Tiempo: ".&formatearTiempo(Time::HiRes::tv_interval($tiempoInicial)) if $debug >= 100;
+say "Tiempo de usuario para $$ fue $user\n",
+    "Tiempo de sistema para $$ fue $system\n",
+    "Tiempo de usuario para todos los procesos hijos fue $child_user\n",
+    "Tiempo de sistema para todos los procesos hijos fue $child_system" if $debug >= 100;
 
 my $td = timediff($t1, $t0);
 say "Tiempo: ", timestr($td), if $debug >= 100;
