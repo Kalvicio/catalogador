@@ -14,11 +14,25 @@ my $tiempoInicial = [Time::HiRes::gettimeofday()]; # Inicializamos el contador d
 
 my $debug = 10000;
 
-use constant _LP => 'lp';
+
+my $reIPv4 = qr/(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))/i;
+my $reDominio = qr/(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])/;
+use constant _LP => 'lp'; 
+use constant _RUTA => 'ruta';
+use constant _REMOTO => 'remoto';
+use constant _USUARIO => 'usuario';
+use constant _PASSWORD => 'password';
+
+
+use constant _LPD => 20;
 
 my %klv_argumentos;
 
-$klv_argumentos{_LP} = 20;  # Límite max de procesos simultáneos
+$klv_argumentos{&_LP} = _LPD; # Límite max de procesos simultáneos
+$klv_argumentos{&_RUTA} = undef; # Ruta a procesar
+$klv_argumentos{&_REMOTO} = 0; # Indica si la ruta es remota (1) o local (otro valor)
+$klv_argumentos{&_USUARIO} = undef; # Usuario de computador remoto
+$klv_argumentos{&_PASSWORD} = undef; # Password del computador remoto
 
 foreach my $arg (@ARGV){
   #print $arg."\n";
@@ -32,21 +46,44 @@ foreach my $arg (@ARGV){
   $valor =~ s/^[\s]+|[\s]+$//igs;
   
   $clave = lc($clave);
-  
+  say $clave." = ".$valor;
   if(exists($klv_argumentos{$clave})){
-    if($clave == _LP){
-      if(!($valor > 0)){
-        $valor = 20;
+    if($clave eq _RUTA){
+      $valor =~ s/\\/\//igs;
+      $klv_argumentos{&_RUTA} = $valor;
+      if($valor =~ /\/\/($reIPv4|$reDominio)/igs ){
+        $klv_argumentos{&_REMOTO} = 1;
+      }elsif(-e $valor){
+        $klv_argumentos{&_REMOTO} = 0;
+      }else{
+        $klv_argumentos{&_RUTA} = undef;
+      }
+      say "Remoto: ".$klv_argumentos{&_REMOTO};
+      say "Ruta: ".$klv_argumentos{&_RUTA};
+    }
+    if($clave eq _LP){
+      if(($valor > 0)){
+        $klv_argumentos{&_LP} = $valor;
+      }else{
+        $klv_argumentos{&_LP} = _LPD;
       }
     }
-    $klv_argumentos{$clave} = $valor;
-    #print "Clave: ".$clave." - Valor: ".$valor."\n";
+
+    if($clave eq _USUARIO){
+      $klv_argumentos{&_USUARIO} = $valor;
+    }
+    if($clave eq _PASSWORD){
+      $klv_argumentos{&_PASSWORD} = $valor;
+    }
+
+
+
   }
 }
 
 
 
-sleep (int(rand(120)));
+#sleep (int(rand(120)));
 
 
 
@@ -57,7 +94,7 @@ my ($user, $system, $child_user, $child_system) = times;
 say "++++++++++++++\n",
     "+ FINALIZADO +\n",
     "++++++++++++++";
-say "Tiempo: ".&formatearTiempo(Time::HiRes::tv_interval($tiempoInicial)) if $debug >= 100;
+say "Tiempo: ".&formatearTiempo(Time::HiRes::tv_interval($tiempoInicial)) if $debug >= 1;
 say "Tiempo de usuario para $$ fue $user\n",
     "Tiempo de sistema para $$ fue $system\n",
     "Tiempo de usuario para todos los procesos hijos fue $child_user\n",
