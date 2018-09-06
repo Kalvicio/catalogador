@@ -12,30 +12,40 @@ use Benchmark::Forking;
 my $t0 = Benchmark->new;
 my $tiempoInicial = [Time::HiRes::gettimeofday()]; # Inicializamos el contador de tiempo
 
-my $debug = 10000;
+my $debug = 10000000;
 
 
 my $reIPv4 = qr/(?:(?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2})[.](?:25[0-5]|2[0-4][0-9]|[0-1]?[0-9]{1,2}))/i;
 my $reDominio = qr/(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])/;
+
 use constant _LP => 'lp'; 
 use constant _RUTA => 'ruta';
+use constant _RUTA_DEST => 'ruta_dest';
 use constant _REMOTO => 'remoto';
-use constant _USUARIO => 'usuario';
-use constant _PASSWORD => 'password';
+use constant _REMOTO_DEST => 'remoto_dest';
+use constant _USUARIO => 'usr';
+use constant _PASSWORD => 'pwd';
+use constant _PM => 'pm';
 
 
-use constant _LPD => 20;
+use constant _VD_LPD_L => 100;
+use constant _VD_LPD_R => 20;
+use constant _VD_PM => '/mnt';
 
 my %klv_argumentos;
 
-$klv_argumentos{&_LP} = _LPD; # Límite max de procesos simultáneos
+$klv_argumentos{&_LP} = _VD_LPD_R; # Límite max de procesos simultáneos
 $klv_argumentos{&_RUTA} = undef; # Ruta a procesar
-$klv_argumentos{&_REMOTO} = 0; # Indica si la ruta es remota (1) o local (otro valor)
+$klv_argumentos{&_RUTA_DEST} = undef; # Ruta de destino
+$klv_argumentos{&_REMOTO} = undef; # Indica si la ruta es remota (1) o local (otro valor)
+$klv_argumentos{&_REMOTO_DEST} = undef; # Indica si la ruta es remota (1) o local (otro valor)
 $klv_argumentos{&_USUARIO} = undef; # Usuario de computador remoto
 $klv_argumentos{&_PASSWORD} = undef; # Password del computador remoto
+$klv_argumentos{&_PM} = _VD_PM; # Punto de montaje
 
+
+say "Procesar argumentos" if $debug >= 100;
 foreach my $arg (@ARGV){
-  #print $arg."\n";
   my ($clave, $valor) = split(/\=/, $arg);
   $clave =~ s/^[\s]+|[\s]+$//igs;
   $clave =~ s/^\-//igs;
@@ -46,10 +56,11 @@ foreach my $arg (@ARGV){
   $valor =~ s/^[\s]+|[\s]+$//igs;
   
   $clave = lc($clave);
-  say $clave." = ".$valor;
+  say $clave." = ".$valor if $debug >= 1000;
   if(exists($klv_argumentos{$clave})){
     if($clave eq _RUTA){
       $valor =~ s/\\/\//igs;
+      $valor =~ s/\/$//igs;
       $klv_argumentos{&_RUTA} = $valor;
       if($valor =~ /\/\/($reIPv4|$reDominio)/igs ){
         $klv_argumentos{&_REMOTO} = 1;
@@ -57,15 +68,29 @@ foreach my $arg (@ARGV){
         $klv_argumentos{&_REMOTO} = 0;
       }else{
         $klv_argumentos{&_RUTA} = undef;
+        $klv_argumentos{&_REMOTO} = undef;
       }
-      say "Remoto: ".$klv_argumentos{&_REMOTO};
-      say "Ruta: ".$klv_argumentos{&_RUTA};
     }
+
+    if($clave eq _RUTA_DEST){
+      $valor =~ s/\\/\//igs;
+      $valor =~ s/\/$//igs;
+      $klv_argumentos{&_RUTA_DEST} = $valor;
+      if($valor =~ /\/\/($reIPv4|$reDominio)/igs ){
+        $klv_argumentos{&_REMOTO_DEST} = 1;
+      }elsif(-e $valor){
+        $klv_argumentos{&_REMOTO_DEST} = 0;
+      }else{
+        $klv_argumentos{&_RUTA_DEST} = undef;
+        $klv_argumentos{&_REMOTO_DEST} = undef;
+      }
+    }
+
     if($clave eq _LP){
       if(($valor > 0)){
         $klv_argumentos{&_LP} = $valor;
       }else{
-        $klv_argumentos{&_LP} = _LPD;
+        $klv_argumentos{&_LP} = _VD_LPD_R;
       }
     }
 
@@ -75,31 +100,38 @@ foreach my $arg (@ARGV){
     if($clave eq _PASSWORD){
       $klv_argumentos{&_PASSWORD} = $valor;
     }
-
-
+    if($clave eq _PM){
+      $klv_argumentos{&_PM} = $valor;
+    }
 
   }
 }
 
 
+say Dumper(\%klv_argumentos);
+
+
 
 #sleep (int(rand(120)));
+if(defined($klv_argumentos{&_RUTA})){
+  say "procesar!";
+}
 
 
 
 
 
-my $t1 = Benchmark->new;
 my ($user, $system, $child_user, $child_system) = times;
 say "++++++++++++++\n",
     "+ FINALIZADO +\n",
-    "++++++++++++++";
+    "++++++++++++++" if $debug >= 1;
 say "Tiempo: ".&formatearTiempo(Time::HiRes::tv_interval($tiempoInicial)) if $debug >= 1;
 say "Tiempo de usuario para $$ fue $user\n",
     "Tiempo de sistema para $$ fue $system\n",
     "Tiempo de usuario para todos los procesos hijos fue $child_user\n",
     "Tiempo de sistema para todos los procesos hijos fue $child_system" if $debug >= 100;
 
+my $t1 = Benchmark->new;
 my $td = timediff($t1, $t0);
 say "Tiempo: ", timestr($td), if $debug >= 100;
 
