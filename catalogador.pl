@@ -425,9 +425,7 @@ sub procesarArchivos {
 	}
   if(&moverArchivo($klv_argumentos{&_RUTA_DEST_BASE}, $klv_argumentos{&_RUTA_DEST}._VD_RW_BASE) == 0){
     &eliminar($klv_argumentos{&_RUTA_DEST_RW});
-    rmtree $klv_argumentos{&_RUTA_DEST_RW};
     rmdir $klv_argumentos{&_RUTA_DEST_RW};
-    unlink $klv_argumentos{&_RUTA_DEST_RW};
   }
   
   my %archivoDatos;
@@ -582,7 +580,6 @@ sub eliminar {
 	chmod 777, $ruta;
 	if(-d $ruta){
 		rmdir $ruta;
-    rmtree $ruta;
 	}else{
 		if(-e $ruta){
 			unlink $ruta;
